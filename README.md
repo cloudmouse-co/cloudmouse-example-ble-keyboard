@@ -42,6 +42,16 @@ Communication between cores happens via FreeRTOS queues:
 
 This ensures thread-safe operation without race conditions.
 
+### App Orchestrator Pattern
+The SDK uses a flexible orchestrator pattern that allows you to build custom applications while maintaining separation between your app logic and the core SDK:
+
+- **Interface-based**: Your app implements `IAppOrchestrator` interface
+- **Event-driven**: Receive SDK events (WiFi, encoder, system state) via callbacks
+- **Lifecycle management**: SDK handles initialization and coordination
+- **Type-safe**: Compile-time checks ensure correct implementation
+
+This pattern lets you focus on your app logic while the SDK handles hardware, networking, and dual-core orchestration.
+
 ## 📦 Required Libraries
 
 ### For Arduino IDE
@@ -251,49 +261,142 @@ When you upload the firmware, CloudMouse will:
 
 ## 🔧 Customization
 
-### Adding Your Own Logic
+## 🎨 Building Custom Applications
 
-#### 1. Add Events
-Edit `lib/core/Events.h`:
+The CloudMouse SDK provides a clean pattern for building standalone applications that integrate seamlessly with the core system.
+
+### App Orchestrator Pattern
+
+Instead of modifying the SDK directly, create your own application class that implements the `IAppOrchestrator` interface:
+
+#### 1. Create Your App Class
 ```cpp
-enum class EventType {
-  MY_CUSTOM_EVENT,
-  // ...
+// MyApp.h
+#include "../core/Core.h"
+
+namespace MyProject {
+
+class MyApp : public CloudMouse::IAppOrchestrator
+{
+public:
+    // Implement required interface methods
+    void initialize() override;
+    void update() override;
+    void processSDKEvent(const CloudMouse::Event& event) override;
+
+private:
+    // Your app-specific data and methods
+    void handleWiFiConnected();
+    void updateDisplay();
 };
+
+} // namespace MyProject
 ```
 
-#### 2. Handle Events
-Edit `lib/core/Core.cpp`:
+#### 2. Implement Event Handling
 ```cpp
-void Core::processEvents() {
-  Event event;
-  while (EventBus::instance().receiveFromUI(event, 0)) {
+// MyApp.cpp
+#include "MyApp.h"
+
+void MyApp::initialize() {
+    Serial.println("MyApp initializing...");
+    // Your initialization logic here
+}
+
+void MyApp::update() {
+    Serial.println("MyApp main loop logic...");
+    // Your main loop logic here
+}
+
+void MyApp::processSDKEvent(const CloudMouse::Event& event) {
     switch (event.type) {
-      case EventType::MY_CUSTOM_EVENT:
-        // Your code here
-        break;
+        case CloudMouse::EventType::WIFI_CONNECTED:
+            handleWiFiConnected();
+            break;
+        
+        case CloudMouse::EventType::ENCODER_ROTATED:
+            Serial.printf("Encoder: %d\n", event.value);
+            break;
+        
+        case CloudMouse::EventType::ENCODER_CLICKED:
+            Serial.println("Button clicked!");
+            break;
+        
+        // Handle other events...
     }
-  }
 }
 ```
 
-#### 3. Update Display
-Edit `lib/hardware/DisplayManager.cpp`:
+#### 3. Register Your App
 ```cpp
-void DisplayManager::renderMyScreen() {
-  sprite.fillSprite(TFT_BLACK);
-  sprite.drawString("Hello!", 240, 160);
-  pushSprite();
+// main sketch
+#include "lib/MyApp/MyApp.h"
+
+using namespace MyProject;
+
+MyApp myApp;
+
+void setup() {
+    Serial.begin(115200);
+    
+    // Initialize hardware components
+    encoder.init();
+    display.init();
+    // ... other hardware
+    
+    // Register components with Core
+    Core::instance().setEncoder(&encoder);
+    Core::instance().setDisplay(&display);
+    // ... other components
+    
+    // Register your app - SDK will call initialize() automatically 
+    // and update() inside the coordinationLoop()
+    Core::instance().setAppOrchestrator(&myApp);
+    
+    // Start system
+    Core::instance().startUITask();
+    Core::instance().initialize();  // Calls myApp.initialize()
 }
 ```
 
-#### 4. Trigger Events
-From anywhere:
+### Available Events
+
+Your app receives these events from the SDK:
 ```cpp
-Event event(EventType::MY_CUSTOM_EVENT);
-event.value = 42;
-EventBus::instance().sendToMain(event);
+EventType::WIFI_CONNECTING      // WiFi connection started
+EventType::WIFI_CONNECTED       // WiFi successfully connected
+EventType::WIFI_DISCONNECTED    // WiFi connection lost
+EventType::WIFI_AP_MODE         // Access Point mode active
+EventType::ENCODER_ROTATED      // Encoder rotated (event.value = direction)
+EventType::ENCODER_CLICKED      // Encoder button pressed
+EventType::ENCODER_LONG_PRESS   // Encoder button held
+EventType::SYSTEM_READY         // System fully initialized
+// ... see Events.h for complete list
 ```
+
+### Benefits
+
+✅ **Clean separation** - Your app logic stays independent from SDK internals  
+✅ **Type-safe** - Compiler ensures you implement required methods  
+✅ **Reusable** - Same app class works across different CloudMouse projects  
+✅ **Testable** - Easy to unit test your app logic independently  
+✅ **Upgradeable** - Update SDK without breaking your app code  
+
+### Real-World Example
+
+Check out the **Forex App** example in `lib/forex/` to see a complete implementation with:
+- Real-time currency exchange rate display
+- WebSocket connection handling
+- Custom UI rendering
+- State management
+- Error handling
+
+```bash
+# Clone the Forex example
+git clone https://github.com/cloudmouse-co/cloudmouse-example forex-app.git
+```
+
+---
 
 ## 🎯 Next Steps
 

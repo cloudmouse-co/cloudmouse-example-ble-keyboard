@@ -23,6 +23,11 @@ namespace CloudMouse
     // Initialize event communication system
     EventBus::instance().initialize();
 
+    // Initialize app orchestrator
+    if (appOrchestrator) {
+      appOrchestrator->initialize();
+    }
+
     // Start system in booting state (shows LED animation)
     setState(SystemState::BOOTING);
 
@@ -123,6 +128,11 @@ namespace CloudMouse
       start();
     }
 
+    // update loop for app orchestrator
+    if (appOrchestrator) {
+      appOrchestrator->update();
+    }
+
     // Process user commands and system events
     processSerialCommands();
     processEvents();
@@ -161,6 +171,11 @@ namespace CloudMouse
       EventBus::instance().sendToUI(Event(EventType::DISPLAY_WAKE_UP));
       setState(SystemState::READY);
 #endif
+
+      if (appOrchestrator) {
+        Event bootingCompleted(EventType::BOOTING_COMPLETE);
+        appOrchestrator->processSDKEvent(bootingCompleted);
+      }
     }
   }
 
@@ -188,6 +203,12 @@ namespace CloudMouse
         {
           ledManager->setLoadingState(true);
         }
+
+        // Sending wifi connecting event to the app orchestrator
+        if (appOrchestrator) {
+          Event wifiConnected(EventType::WIFI_CONNECTING);
+          appOrchestrator->processSDKEvent(wifiConnected);
+        }
         break;
 
       case WiFiManager::WiFiState::CONNECTED:
@@ -208,6 +229,12 @@ namespace CloudMouse
         Event helloEvent(EventType::ENCODER_ROTATION, 0);
         EventBus::instance().sendToUI(helloEvent);
 
+        // Sending wifi connected event to the app orchestrator
+        if (appOrchestrator) {
+          Event wifiConnected(EventType::WIFI_CONNECTED);
+          appOrchestrator->processSDKEvent(wifiConnected);
+        }
+
         setState(SystemState::READY);
       }
       break;
@@ -216,6 +243,12 @@ namespace CloudMouse
       case WiFiManager::WiFiState::TIMEOUT:
       case WiFiManager::WiFiState::ERROR:
         Serial.println("❌ WiFi: Connection failed - starting setup mode");
+
+        // Sending wifi disconnected event to the app orchestrator
+        if (appOrchestrator) {
+          Event wifiConnected(EventType::WIFI_DISCONNECTED);
+          appOrchestrator->processSDKEvent(wifiConnected);
+        }
 
         if (wifi)
         {
@@ -294,6 +327,10 @@ namespace CloudMouse
     while (EventBus::instance().receiveFromUI(event, 0))
     {
       eventsProcessed++;
+
+      if (appOrchestrator) {
+        appOrchestrator->processSDKEvent(event);
+      }
 
       switch (event.type)
       {
