@@ -6,6 +6,7 @@
  */
 
 #include "BluetoothManager.h"
+#include "../utils/Logger.h"
 
 namespace CloudMouse::Network
 {
@@ -21,7 +22,7 @@ namespace CloudMouse::Network
 
     void BluetoothManager::init()
     {
-        Serial.println("🔵 Initializing BluetoothManager...");
+        SDK_LOGGER("🔵 Initializing BluetoothManager...");
 
         setState(BluetoothState::INITIALIZING);
 
@@ -35,8 +36,8 @@ namespace CloudMouse::Network
         initialized = true;
         setState(BluetoothState::ADVERTISING);
 
-        Serial.printf("✅ Bluetooth initialized: %s\n", deviceName.c_str());
-        Serial.println("🔵 Advertising... Waiting for connection");
+        SDK_LOGGER("✅ Bluetooth initialized: %s\n", deviceName.c_str());
+        SDK_LOGGER("🔵 Advertising... Waiting for connection");
     }
 
     void BluetoothManager::update()
@@ -51,7 +52,7 @@ namespace CloudMouse::Network
         if (connected && currentState != BluetoothState::CONNECTED)
         {
             setState(BluetoothState::CONNECTED);
-            Serial.println("🔵 Device connected!");
+            SDK_LOGGER("🔵 Device connected!");
 
             // Release all keys (benign operation that forces HID sync)
             bleKeyboard->releaseAll();
@@ -60,11 +61,11 @@ namespace CloudMouse::Network
         else if (!connected && currentState == BluetoothState::CONNECTED)
         {
             setState(BluetoothState::DISCONNECTED);
-            Serial.println("🔵 Device disconnected");
+            SDK_LOGGER("🔵 Device disconnected");
 
             // Auto-restart advertising after disconnect
             setState(BluetoothState::ADVERTISING);
-            Serial.println("🔵 Advertising... Waiting for reconnection");
+            SDK_LOGGER("🔵 Advertising... Waiting for reconnection");
         }
     }
 
@@ -73,7 +74,7 @@ namespace CloudMouse::Network
         if (!initialized)
             return;
 
-        Serial.println("🔵 Shutting down Bluetooth...");
+        SDK_LOGGER("🔵 Shutting down Bluetooth...");
 
         // Release BLE keyboard instance
         if (bleKeyboard)
@@ -85,7 +86,7 @@ namespace CloudMouse::Network
         initialized = false;
         setState(BluetoothState::IDLE);
 
-        Serial.println("✅ Bluetooth shutdown complete");
+        SDK_LOGGER("✅ Bluetooth shutdown complete");
     }
 
     // ============================================================================
@@ -122,7 +123,7 @@ namespace CloudMouse::Network
             "DISCONNECTED",
             "ERROR"};
 
-        Serial.printf("🔵 Bluetooth State: %s\n", stateNames[(int)newState]);
+        SDK_LOGGER("🔵 Bluetooth State: %s\n", stateNames[(int)newState]);
     }
 
     String BluetoothManager::generateDeviceName()

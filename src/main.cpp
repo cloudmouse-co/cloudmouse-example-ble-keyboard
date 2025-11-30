@@ -20,6 +20,7 @@
 // #include "../lib/network/WebServerManager.h"
 // #include "../lib/hardware/LEDManager.h"
 // #include "../lib/network/BluetoothManager.h"
+// #include "../lib/utils/Logger.h"
 
 // using namespace CloudMouse;
 
@@ -36,9 +37,9 @@
 //     delay(1000);
 
 //     // Welcome message
-//     Serial.println();
-//     Serial.println("🚀 CloudMouse SDK Boilerplate v1.0");
-//     Serial.println("   Ready to build something amazing! 🎯");
+//     SDK_LOGGER("");
+//     SDK_LOGGER("🚀 CloudMouse SDK Boilerplate v1.0");
+//     SDK_LOGGER("   Ready to build something amazing! 🎯");
     
 //     // Initialize hardware components
 //     SimpleBuzzer::init();
@@ -59,7 +60,7 @@
 //     Core::instance().startUITask();     // UI rendering on Core 1
 //     Core::instance().initialize();      // Event system on Core 0
     
-//     Serial.println("✅ System ready!");
+//     SDK_LOGGER("✅ System ready!");
 // }
 
 // void loop() {

@@ -49,7 +49,7 @@ namespace CloudMouse::Hardware
         {
             delete sprite;
             sprite = nullptr;
-            Serial.println("🖥️ Sprite buffer deallocated");
+            SDK_LOGGER("🖥️ Sprite buffer deallocated");
         }
     }
 
@@ -59,7 +59,7 @@ namespace CloudMouse::Hardware
 
     void DisplayManager::init()
     {
-        Serial.println("🖥️ Initializing DisplayManager...");
+        SDK_LOGGER("🖥️ Initializing DisplayManager...");
 
         // Initialize ILI9488 display hardware
         // Configures SPI interface, power management, and display orientation
@@ -72,7 +72,7 @@ namespace CloudMouse::Hardware
 
         if (!sprite)
         {
-            Serial.println("❌ Failed to allocate sprite object!");
+            SDK_LOGGER("❌ Failed to allocate sprite object!");
             return;
         }
 
@@ -86,11 +86,11 @@ namespace CloudMouse::Hardware
         if (spriteCreated)
         {
             initialized = true;
-            Serial.println("✅ Sprite buffer created successfully");
-            Serial.printf("   Resolution: %dx%d pixels\n", getWidth(), getHeight());
-            Serial.printf("   Color depth: 16-bit RGB565\n");
-            Serial.printf("   Buffer size: %d bytes\n", 480 * 320 * 2);
-            Serial.printf("   Memory location: PSRAM\n");
+            SDK_LOGGER("✅ Sprite buffer created successfully");
+            SDK_LOGGER("   Resolution: %dx%d pixels\n", getWidth(), getHeight());
+            SDK_LOGGER("   Color depth: 16-bit RGB565\n");
+            SDK_LOGGER("   Buffer size: %d bytes\n", 480 * 320 * 2);
+            SDK_LOGGER("   Memory location: PSRAM\n");
 
             // Initialize QR code manager with sprite reference
             qrCodeManager.init(sprite);
@@ -101,18 +101,18 @@ namespace CloudMouse::Hardware
         }
         else
         {
-            Serial.println("❌ Failed to create sprite buffer - insufficient PSRAM!");
-            Serial.printf("   Required: %d bytes\n", 480 * 320 * 2);
-            Serial.printf("   Available PSRAM: %d bytes\n", ESP.getFreePsram());
+            SDK_LOGGER("❌ Failed to create sprite buffer - insufficient PSRAM!");
+            SDK_LOGGER("   Required: %d bytes\n", 480 * 320 * 2);
+            SDK_LOGGER("   Available PSRAM: %d bytes\n", ESP.getFreePsram());
             return;
         }
 
         // Log successful initialization with system status
-        Serial.printf("✅ DisplayManager initialized successfully\n");
-        Serial.printf("   Display resolution: %dx%d\n", getWidth(), getHeight());
-        Serial.printf("   Sprite memory usage: %d bytes\n", 480 * 320 * 2);
-        Serial.printf("   Free PSRAM after allocation: %d bytes\n", ESP.getFreePsram());
-        Serial.printf("   Initial screen: HELLO_WORLD\n");
+        SDK_LOGGER("✅ DisplayManager initialized successfully\n");
+        SDK_LOGGER("   Display resolution: %dx%d\n", getWidth(), getHeight());
+        SDK_LOGGER("   Sprite memory usage: %d bytes\n", 480 * 320 * 2);
+        SDK_LOGGER("   Free PSRAM after allocation: %d bytes\n", ESP.getFreePsram());
+        SDK_LOGGER("   Initial screen: HELLO_WORLD\n");
     }
 
     void DisplayManager::update()
@@ -144,7 +144,7 @@ namespace CloudMouse::Hardware
             // Check if 1 second has passed since last volume feedback
             if (millis() - lastVolumeFeedbackTime >= 1000)
             {
-                Serial.println("⏱️ Volume feedback timeout - returning to IDLE");
+                SDK_LOGGER("⏱️ Volume feedback timeout - returning to IDLE");
                 renderVolumeFeedback("IDLE");
                 needsRedraw = false;  // Stop redrawing
                 lastVolumeFeedbackTime = 0;  // Reset timestamp
@@ -211,7 +211,7 @@ namespace CloudMouse::Hardware
         case EventType::DISPLAY_WAKE_UP:
             wakeUp();
             // Display activation - show default interactive screen
-            Serial.println("📺 Display wake up - switching to HELLO_WORLD");
+            SDK_LOGGER("📺 Display wake up - switching to HELLO_WORLD");
             currentScreen = Screen::VOLUME_FEEDBACK;
             needsRedraw = false; // Static screen, no continuous animation
             renderVolumeFeedback("IDLE");
@@ -219,7 +219,7 @@ namespace CloudMouse::Hardware
 
         case EventType::DISPLAY_WIFI_CONNECTING:
             // WiFi connection attempt - show animated progress screen
-            Serial.println("📡 Display: Showing WiFi connecting screen with animation");
+            SDK_LOGGER("📡 Display: Showing WiFi connecting screen with animation");
             currentScreen = Screen::WIFI_CONNECTING;
             needsRedraw = true; // Enable continuous animation for spinner
             renderWiFiConnecting();
@@ -241,7 +241,7 @@ namespace CloudMouse::Hardware
         // case EventType::ENCODER_CLICK:
         //     wakeUp();
         //     // Button click - record interaction and update display if on interactive screen
-        //     Serial.println("🖱️ Display received encoder click");
+        //     SDK_LOGGER("🖱️ Display received encoder click");
         //     lastClickTime = millis();
         //     if (currentScreen == Screen::HELLO_WORLD)
         //     {
@@ -252,7 +252,7 @@ namespace CloudMouse::Hardware
         // case EventType::ENCODER_LONG_PRESS:
         //     wakeUp();
         //     // Long press - record interaction and update display if on interactive screen
-        //     Serial.println("⏱️ Display received encoder long press");
+        //     SDK_LOGGER("⏱️ Display received encoder long press");
         //     lastLongPressTime = millis();
         //     if (currentScreen == Screen::HELLO_WORLD)
         //     {
@@ -263,7 +263,7 @@ namespace CloudMouse::Hardware
         case EventType::DISPLAY_WIFI_AP_MODE:
             wakeUp();
             // Access Point mode - show WiFi connection QR code
-            Serial.println("📱 Switching to AP Mode screen - WiFi setup required");
+            SDK_LOGGER("📱 Switching to AP Mode screen - WiFi setup required");
             currentScreen = Screen::WIFI_AP_MODE;
             needsRedraw = false; // Static QR code, no animation needed
             renderAPMode();
@@ -272,7 +272,7 @@ namespace CloudMouse::Hardware
         case EventType::DISPLAY_WIFI_SETUP_URL:
             wakeUp();
             // Client connected to AP - show web configuration QR code
-            Serial.println("🌐 Switching to AP Connected screen - web setup available");
+            SDK_LOGGER("🌐 Switching to AP Connected screen - web setup available");
             currentScreen = Screen::WIFI_AP_CONNECTED;
             needsRedraw = false; // Static configuration screen
             renderAPConnected();
@@ -280,7 +280,7 @@ namespace CloudMouse::Hardware
 
         case EventType::DISPLAY_CLEAR:
             // Clear screen command - immediate screen clear
-            Serial.println("🧹 Display clear requested");
+            SDK_LOGGER("🧹 Display clear requested");
             if (sprite)
             {
                 sprite->fillSprite(COLOR_BG);
@@ -290,7 +290,7 @@ namespace CloudMouse::Hardware
 
         case EventType::VOLUME_UP_FEEDBACK:
             wakeUp();
-            Serial.println("🔊 Display: Volume UP feedback");
+            SDK_LOGGER("🔊 Display: Volume UP feedback");
             currentScreen = Screen::VOLUME_FEEDBACK;
             renderVolumeFeedback("VOLUME UP");
             lastVolumeFeedbackTime = millis();
@@ -299,7 +299,7 @@ namespace CloudMouse::Hardware
 
         case EventType::VOLUME_DOWN_FEEDBACK:
             wakeUp();
-            Serial.println("🔉 Display: Volume DOWN feedback");
+            SDK_LOGGER("🔉 Display: Volume DOWN feedback");
             currentScreen = Screen::VOLUME_FEEDBACK;
             renderVolumeFeedback("VOLUME DOWN");
             lastVolumeFeedbackTime = millis();
@@ -308,7 +308,7 @@ namespace CloudMouse::Hardware
 
         case EventType::VOLUME_MUTE_FEEDBACK:
             wakeUp();
-            Serial.println("🔇 Display: Mute feedback");
+            SDK_LOGGER("🔇 Display: Mute feedback");
             currentScreen = Screen::VOLUME_FEEDBACK;
             renderVolumeFeedback("TOGGLE MUTE");
             lastVolumeFeedbackTime = millis();
@@ -317,7 +317,7 @@ namespace CloudMouse::Hardware
 
         default:
             // Unhandled event type - log for debugging but continue operation
-            Serial.printf("⚠️ DisplayManager: Unhandled event type %d\n", (int)event.type);
+            SDK_LOGGER("⚠️ DisplayManager: Unhandled event type %d\n", (int)event.type);
             break;
         }
     }
@@ -330,7 +330,7 @@ namespace CloudMouse::Hardware
     {
         if (!sprite)
         {
-            Serial.println("❌ Cannot render - sprite not initialized");
+            SDK_LOGGER("❌ Cannot render - sprite not initialized");
             return;
         }
 
@@ -380,7 +380,7 @@ namespace CloudMouse::Hardware
     {
         if (!sprite)
         {
-            Serial.println("❌ Cannot render - sprite not initialized");
+            SDK_LOGGER("❌ Cannot render - sprite not initialized");
             return;
         }
 
@@ -440,7 +440,7 @@ namespace CloudMouse::Hardware
     {
         if (!sprite)
         {
-            Serial.println("❌ Cannot render - sprite not initialized");
+            SDK_LOGGER("❌ Cannot render - sprite not initialized");
             return;
         }
 
@@ -486,7 +486,7 @@ namespace CloudMouse::Hardware
     {
         if (!sprite)
         {
-            Serial.println("❌ Cannot render - sprite not initialized");
+            SDK_LOGGER("❌ Cannot render - sprite not initialized");
             return;
         }
 
@@ -537,7 +537,7 @@ namespace CloudMouse::Hardware
         }
         else
         {
-            Serial.println("⚠️ Cannot push sprite - buffer not initialized");
+            SDK_LOGGER("⚠️ Cannot push sprite - buffer not initialized");
         }
     }
 
@@ -591,7 +591,7 @@ namespace CloudMouse::Hardware
     {
         if (!sprite)
         {
-            Serial.println("❌ Cannot render - sprite not initialized");
+            SDK_LOGGER("❌ Cannot render - sprite not initialized");
             return;
         }
 
