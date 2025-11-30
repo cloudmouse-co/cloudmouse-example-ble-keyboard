@@ -299,12 +299,12 @@ private:
 #include "MyApp.h"
 
 void MyApp::initialize() {
-    Serial.println("MyApp initializing...");
+    SDK_LOGGER("MyApp initializing...");
     // Your initialization logic here
 }
 
 void MyApp::update() {
-    Serial.println("MyApp main loop logic...");
+    SDK_LOGGER("MyApp main loop logic...");
     // Your main loop logic here
 }
 
@@ -315,11 +315,11 @@ void MyApp::processSDKEvent(const CloudMouse::Event& event) {
             break;
         
         case CloudMouse::EventType::ENCODER_ROTATED:
-            Serial.printf("Encoder: %d\n", event.value);
+            SDK_LOGGER("Encoder: %d\n", event.value);
             break;
         
         case CloudMouse::EventType::ENCODER_CLICKED:
-            Serial.println("Button clicked!");
+            SDK_LOGGER("Button clicked!");
             break;
         
         // Handle other events...
